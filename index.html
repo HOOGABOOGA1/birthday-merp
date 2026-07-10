@@ -949,6 +949,40 @@ footer{
           <div class="mp-dur">3:42</div>
         </div>
 
+        <div class="mp-track" id="mpt-5" onclick="playTrack(this,5)">
+          <div class="mp-num">
+            <div class="eq-bars">
+              <div class="eq-bar" style="--d:.5s"></div>
+              <div class="eq-bar" style="--d:.8s"></div>
+              <div class="eq-bar" style="--d:.6s"></div>
+            </div>
+            <span class="mp-num-txt">5</span>
+          </div>
+          <div class="mp-art" style="background:linear-gradient(135deg,#f472b6,#a855f7)">🌸</div>
+          <div class="mp-info">
+            <div class="mp-name">Delulu Canon Event</div>
+            <div class="mp-artist">Merp's pick 💜</div>
+          </div>
+          <div class="mp-dur">♪</div>
+        </div>
+
+        <div class="mp-track" id="mpt-6" onclick="playTrack(this,6)">
+          <div class="mp-num">
+            <div class="eq-bars">
+              <div class="eq-bar" style="--d:.7s"></div>
+              <div class="eq-bar" style="--d:.5s"></div>
+              <div class="eq-bar" style="--d:.9s"></div>
+            </div>
+            <span class="mp-num-txt">6</span>
+          </div>
+          <div class="mp-art" style="background:linear-gradient(135deg,#a855f7,#22d3ee)">✨</div>
+          <div class="mp-info">
+            <div class="mp-name">Delulu Canon Event <span style="font-size:.7rem;color:var(--purple)">v2</span></div>
+            <div class="mp-artist">Merp's pick 💜</div>
+          </div>
+          <div class="mp-dur">♪</div>
+        </div>
+
       </div>
     </div>
 
@@ -1330,10 +1364,12 @@ function toggleTroll(){
 
 /* ── MUSIC PLAYER (YouTube IFrame API) ─────── */
 const TRACKS = [
-  { id: '04l_GY_v5Wk', title: 'NAIL',              artist: 'Yves feat. Lolo Zouaï', art: '🖤' },
-  { id: 'MlI5f90ZBPM', title: 'Can You Entertain?', artist: 'Kim Lip',               art: '💄' },
-  { id: 'phuiiNCxRMg', title: 'Supernova',           artist: 'aespa',                 art: '🪐' },
-  { id: 'dYRITmpFbJ4', title: 'Girls',               artist: 'aespa',                 art: '🌙' },
+  { type:'yt',    id: '04l_GY_v5Wk', title: 'NAIL',                       artist: 'Yves feat. Lolo Zouaï', art: '🖤' },
+  { type:'yt',    id: 'MlI5f90ZBPM', title: 'Can You Entertain?',           artist: 'Kim Lip',               art: '💄' },
+  { type:'yt',    id: 'phuiiNCxRMg', title: 'Supernova',                    artist: 'aespa',                 art: '🪐' },
+  { type:'yt',    id: 'dYRITmpFbJ4', title: 'Girls',                        artist: 'aespa',                 art: '🌙' },
+  { type:'local', id: 'Delulu Canon Event.mp3',    title: 'Delulu Canon Event',    artist: 'Merp’s pick 💜', art: '🌸' },
+  { type:'local', id: 'DELULU CANON EVENT (v2).mp3', title: 'Delulu Canon Event v2', artist: 'Merp’s pick 💜', art: '✨' },
 ];
 
 let ytPlayer = null;
@@ -1359,6 +1395,12 @@ function playTrack(el, num) {
   document.querySelectorAll('.mp-track').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.mp-num-txt').forEach(t => t.style.display = '');
 
+  // Stop any existing local audio
+  if (window._localAudio) {
+    window._localAudio.pause();
+    window._localAudio = null;
+  }
+
   // Toggle: clicking the same track again pauses
   if (curTrackNum === num && ytPlaying) {
     if (ytPlayer) ytPlayer.pauseVideo();
@@ -1382,39 +1424,66 @@ function playTrack(el, num) {
   document.getElementById('yt-disk').textContent   = track.art;
   document.getElementById('yt-disk').style.animationPlayState = 'running';
   document.getElementById('yt-play-btn').textContent = '⏸';
-  document.getElementById('yt-status').textContent = '▶ Playing via YouTube';
 
-  // Build or load video in iframe
   const iframeWrap = document.getElementById('yt-iframe-wrap');
-  iframeWrap.style.height = '168px'; // expand the player
-  if (!ytPlayer || !ytReady) {
-    // Direct iframe embed with autoplay
-    iframeWrap.innerHTML = `<iframe
-      id="yt-iframe"
-      src="https://www.youtube.com/embed/${track.id}?autoplay=1&mute=0&rel=0&modestbranding=1&enablejsapi=1"
-      allow="autoplay; encrypted-media; fullscreen"
-      allowfullscreen
-      style="width:100%;height:168px;border:none;display:block;"
-    ></iframe>`;
+
+  if (track.type === 'local') {
+    // ── LOCAL MP3 ──
+    iframeWrap.style.height = '0';
+    iframeWrap.innerHTML = '';
+    document.getElementById('yt-status').textContent = '▶ Playing local file';
+
+    const audio = new Audio(track.id);
+    audio.volume = 1;
+    audio.play().catch(() => {
+      document.getElementById('yt-status').textContent = '⚠️ Click play to start';
+    });
+    window._localAudio = audio;
     ytPlaying = true;
+
+    audio.ontimeupdate = () => {
+      const m = Math.floor(audio.currentTime / 60);
+      const s = Math.floor(audio.currentTime % 60).toString().padStart(2,'0');
+      document.getElementById('yt-status').textContent = `▶ ${m}:${s} / ${Math.floor(audio.duration/60)||'?'}:${Math.floor(audio.duration%60).toString().padStart(2,'0')}`;
+    };
+    audio.onended = () => {
+      ytPlaying = false;
+      document.getElementById('yt-play-btn').textContent = '▶';
+      document.getElementById('yt-disk').style.animationPlayState = 'paused';
+      document.getElementById('mp-disk').classList.add('paused');
+      document.querySelectorAll('.mp-track').forEach(t => t.classList.remove('active'));
+    };
   } else {
-    ytPlayer.loadVideoById(track.id);
-    ytPlaying = true;
+    // ── YOUTUBE ──
+    document.getElementById('yt-status').textContent = '▶ Playing via YouTube';
+    iframeWrap.style.height = '168px';
+    if (!ytPlayer || !ytReady) {
+      iframeWrap.innerHTML = `<iframe
+        id="yt-iframe"
+        src="https://www.youtube.com/embed/${track.id}?autoplay=1&mute=0&rel=0&modestbranding=1&enablejsapi=1"
+        allow="autoplay; encrypted-media; fullscreen"
+        allowfullscreen
+        style="width:100%;height:168px;border:none;display:block;"
+      ></iframe>`;
+      ytPlaying = true;
+    } else {
+      ytPlayer.loadVideoById(track.id);
+      ytPlaying = true;
+    }
   }
 }
 
 function toggleYtPlay() {
   if (!ytPlaying) {
-    // Re-play current track
     if (curTrackNum > 0) playTrack(document.getElementById('mpt-'+curTrackNum), curTrackNum);
     return;
   }
-  // Try via API first, fallback is manual
-  if (ytPlayer && ytReady) {
-    ytPlayer.pauseVideo();
+  const track = TRACKS[curTrackNum - 1];
+  if (track && track.type === 'local') {
+    if (window._localAudio) { window._localAudio.pause(); }
   } else {
-    // Remove iframe to stop
-    document.getElementById('yt-iframe-wrap').innerHTML = '';
+    if (ytPlayer && ytReady) { ytPlayer.pauseVideo(); }
+    else { document.getElementById('yt-iframe-wrap').innerHTML = ''; }
   }
   ytPlaying = false;
   document.getElementById('yt-play-btn').textContent = '▶';
@@ -1425,6 +1494,7 @@ function toggleYtPlay() {
 }
 
 function closeYtPlayer() {
+  if (window._localAudio) { window._localAudio.pause(); window._localAudio = null; }
   const iframeWrap = document.getElementById('yt-iframe-wrap');
   iframeWrap.style.height = '0';
   setTimeout(() => { iframeWrap.innerHTML = ''; }, 300);
