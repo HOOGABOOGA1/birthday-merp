@@ -601,6 +601,26 @@ footer{
 
 /* section divider */
 .divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-glow),transparent);margin:0 1.5rem}
+
+/* Lock Screen State styles */
+body.is-locked #main-nav .nav-links { display: none !important; }
+body.is-locked .hero-buttons { display: none !important; }
+body.is-locked .origin-card { display: none !important; }
+body.is-locked #stats,
+body.is-locked #football,
+body.is-locked #talent,
+body.is-locked #quiz,
+body.is-locked #message-section,
+body.is-locked footer,
+body.is-locked .divider { display: none !important; }
+
+#lock-screen-widget { display: none; }
+body.is-locked #lock-screen-widget { display: block; }
+
+@keyframes lockGlow {
+  0%, 100% { filter: drop-shadow(0 0 10px var(--purple)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 25px var(--pink)); transform: scale(1.05); }
+}
 </style>
 </head>
 <body>
@@ -693,9 +713,20 @@ footer{
     </div>
     <p id="cd-label" style="color:var(--text-2);font-size:.85rem;margin-top:-.5rem;margin-bottom:1.5rem;animation:fadeDown 1s ease .45s both"></p>
 
-    <div style="animation:fadeDown 1s ease .5s both">
+    <div class="hero-buttons" style="animation:fadeDown 1s ease .5s both">
       <a href="#stats" class="btn btn-primary">🎊 Let's Celebrate!</a>
       <a href="#quiz" class="btn btn-ghost" style="margin-left:.8rem">🔐 Take the Quiz</a>
+    </div>
+
+    <!-- Lock Screen Widget -->
+    <div id="lock-screen-widget" class="card" style="margin-top:2.5rem; max-width:500px; margin-left:auto; margin-right:auto; animation:fadeDown 1s ease .5s both">
+      <div class="card-inner" style="text-align:center; padding:2rem;">
+        <div style="font-size:3.5rem; margin-bottom:1rem; animation: lockGlow 2.5s ease-in-out infinite;">🔒</div>
+        <h3 style="font-family:'Outfit',sans-serif; font-size:1.4rem; font-weight:800; margin-bottom:.5rem;">Surprise Locked!</h3>
+        <p style="color:var(--text-2); font-size:.9rem; line-height:1.6;">
+          Merp, no peeking! 🤫 Everything will automatically unlock when the countdown hits zero on July 19th!
+        </p>
+      </div>
     </div>
 
     <!-- Origin Story -->
@@ -1325,8 +1356,19 @@ function tick(){
   const lbl = document.getElementById('cd-label');
   if (d === 0 && h === 0 && m === 0 && s <= 0) {
     lbl.textContent = "🎂 IT'S TODAY! HAPPY BIRTHDAY MERP!!";
+    
+    // Unlock everything if currently locked
+    if (document.body.classList.contains('is-locked')) {
+      document.body.classList.remove('is-locked');
+      // Trigger a massive confetti explosion!
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => confettiBurst(Math.random() * innerWidth, Math.random() * innerHeight * 0.4), i * 150);
+      }
+    }
   } else {
     lbl.textContent = `Until July 19th — Merp's birthday 🎂 (Austria CEST Time)`;
+    // Keep it locked
+    document.body.classList.add('is-locked');
   }
 }
 tick(); setInterval(tick, 1000);
