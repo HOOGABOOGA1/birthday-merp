@@ -1299,23 +1299,37 @@ document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
 /* ── COUNTDOWN ─────────────────────────────── */
 function tick(){
-  const now=new Date();
-  const target=new Date(now.getFullYear(),6,19); // July 19
-  if(now>target) target.setFullYear(target.getFullYear()+1);
-  const diff=target-now;
-  const d=Math.floor(diff/864e5);
-  const h=Math.floor((diff%864e5)/36e5);
-  const m=Math.floor((diff%36e5)/6e4);
-  const s=Math.floor((diff%6e4)/1e3);
-  document.getElementById('cd-d').textContent=String(d).padStart(2,'0');
-  document.getElementById('cd-h').textContent=String(h).padStart(2,'0');
-  document.getElementById('cd-m').textContent=String(m).padStart(2,'0');
-  document.getElementById('cd-s').textContent=String(s).padStart(2,'0');
-  const lbl=document.getElementById('cd-label');
-  if(d===0&&h===0&&m===0) lbl.textContent="🎂 IT'S TODAY! HAPPY BIRTHDAY MERP!!";
-  else lbl.textContent=`Until July 19th — Merp's birthday 🎂`;
+  const now = new Date();
+  let targetYear = now.getFullYear();
+  
+  // July 19th at 00:00:00 in Austria (CEST, UTC+2) is July 18th at 22:00:00 UTC.
+  let targetUTC = Date.UTC(targetYear, 6, 18, 22, 0, 0); // 6 is July (0-indexed)
+  
+  // If target has passed this year, countdown to next year's date
+  if (now.getTime() > targetUTC) {
+    targetYear++;
+    targetUTC = Date.UTC(targetYear, 6, 18, 22, 0, 0);
+  }
+  
+  const diff = targetUTC - now.getTime();
+  const d = Math.floor(diff / 864e5);
+  const h = Math.floor((diff % 864e5) / 36e5);
+  const m = Math.floor((diff % 36e5) / 6e4);
+  const s = Math.floor((diff % 6e4) / 1e3);
+  
+  document.getElementById('cd-d').textContent = String(d).padStart(2, '0');
+  document.getElementById('cd-h').textContent = String(h).padStart(2, '0');
+  document.getElementById('cd-m').textContent = String(m).padStart(2, '0');
+  document.getElementById('cd-s').textContent = String(s).padStart(2, '0');
+  
+  const lbl = document.getElementById('cd-label');
+  if (d === 0 && h === 0 && m === 0 && s <= 0) {
+    lbl.textContent = "🎂 IT'S TODAY! HAPPY BIRTHDAY MERP!!";
+  } else {
+    lbl.textContent = `Until July 19th — Merp's birthday 🎂 (Austria CEST Time)`;
+  }
 }
-tick(); setInterval(tick,1000);
+tick(); setInterval(tick, 1000);
 
 /* ── STAT COUNTERS ─────────────────────────── */
 const statObs=new IntersectionObserver(entries=>{
@@ -1591,7 +1605,7 @@ function confettiBurst(x,y,count=60){
   }
 }
 
-/* ── LAUNCH CONFETTI ON LOAD ──────────────── */
+/* ── LAUNCH CONFETTI AND AUTOPLAY ON LOAD ──────────────── */
 window.addEventListener('load',()=>{
   setTimeout(()=>{
     for(let i=0;i<4;i++) setTimeout(()=>confettiBurst(
@@ -1599,6 +1613,32 @@ window.addEventListener('load',()=>{
       innerHeight*.1+Math.random()*innerHeight*.15
     ),i*350);
   },600);
+
+  // Attempt to autoplay local Track 5 (Delulu Canon Event v1)
+  const track5 = document.getElementById('mpt-5');
+  if (track5) {
+    playTrack(track5, 5);
+  }
+
+  // Fallback for strict browser autoplay rules: trigger on first user click/interaction
+  const startAutoplay = () => {
+    if (window._localAudio && window._localAudio.paused) {
+      window._localAudio.play().then(() => {
+        ytPlaying = true;
+        document.getElementById('yt-play-btn').textContent = '⏸';
+        document.getElementById('yt-disk').style.animationPlayState = 'running';
+        document.getElementById('mp-disk').classList.remove('paused');
+        document.getElementById('yt-status').textContent = '▶ Playing local file';
+      }).catch(err => console.log("Autoplay failed: ", err));
+    } else if (curTrackNum === -1) {
+      const t5 = document.getElementById('mpt-5');
+      if (t5) playTrack(t5, 5);
+    }
+    document.removeEventListener('click', startAutoplay);
+    document.removeEventListener('keydown', startAutoplay);
+  };
+  document.addEventListener('click', startAutoplay);
+  document.addEventListener('keydown', startAutoplay);
 });
 
 /* ── KEYBOARD A11Y ─────────────────────────── */
