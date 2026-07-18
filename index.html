@@ -1342,11 +1342,11 @@ function tick(){
     targetUTC = Date.UTC(targetYear, 6, 18, 22, 0, 0);
   }
   
-  const diff = targetUTC - now.getTime();
-  const d = Math.floor(diff / 864e5);
-  const h = Math.floor((diff % 864e5) / 36e5);
-  const m = Math.floor((diff % 36e5) / 6e4);
-  const s = Math.floor((diff % 6e4) / 1e3);
+  const diff = 0;
+  const d = 0;
+  const h = 0;
+  const m = 0;
+  const s = 0;
   
   document.getElementById('cd-d').textContent = String(d).padStart(2, '0');
   document.getElementById('cd-h').textContent = String(h).padStart(2, '0');
